@@ -25,6 +25,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ------------------------
+v1.3 2025-03-03
+Change: Instead of returning -1 as documented by Barracuda, the firewall returns 2 when a tunnel is down.
+
 v1.2 2023-11-22
 Upgrade to python3
 Feature: Added filtering for IPSEC-v2 tunnels. A tunnel will be reported down if child tunnels are not exitent or down.
@@ -163,8 +166,8 @@ def get_vpn_tunnel():
 		output_nagios(return_msg,'', return_code['UNKNOWN'])
 
 	for status,name in zip(vpn_status, vpn_name):
-		# -1, 0 and 1 are all known status codes. If no of these are found the snmp service probably isn't running
-		if not status in ['-1','0','1']:
+		# 2, 0 and 1 are all known status codes. If no of these are found the snmp service probably isn't running
+		if not status in ['2','0','1']:
 			return_msg = 'OK - VPN service inactive or no VPN tunnel configured'
 			output_nagios(return_msg,'', return_code['OK'])
 
@@ -198,11 +201,11 @@ def check_vpn_tunnel_state(vpn_tunnels):
 		if "children" in vpn_tunnel.keys():
 			# If no children are found, set parent to down
 			if len(vpn_tunnel["children"]) == 0:
-				vpn_tunnel["status"] = '-1'
+				vpn_tunnel["status"] = '2'
 			for child in vpn_tunnel["children"]:
 			# If one child is down, set parent to down
-				if child["status"] in ['0','-1']:
-					vpn_tunnel["status"] = '-1'
+				if child["status"] in ['0','2']:
+					vpn_tunnel["status"] = '2'
 				else:
 					vpn_tunnel["status"] = '1'
 
@@ -211,7 +214,7 @@ def check_vpn_tunnel_state(vpn_tunnels):
 			return_msg_extended_down_tmp 	+= '\n' + vpn_tunnel['name'] + ' (down-disabled)'
 			return_key 						= 'CRITICAL'
 			tunnel_count_down 				+= 1
-		elif vpn_tunnel['status'] == '-1':
+		elif vpn_tunnel['status'] == '2':
 			return_msg_tmp 					+= vpn_tunnel['name'] + ' (down), '
 			return_msg_extended_down_tmp 	+= '\n' + vpn_tunnel['name'] + ' (down)'
 			return_key 						= 'CRITICAL'
